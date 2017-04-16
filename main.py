@@ -1,3 +1,4 @@
+import chess
 from collections import namedtuple
 
 A1, H1, A8, H8 = 91, 98, 21, 28
