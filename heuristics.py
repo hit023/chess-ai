@@ -73,27 +73,130 @@ pst = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 }
 
-def evaluateBoard(board):
-    totalEval = 0
-    for i in range(len(board)):
-        totalEval = totalEval + getPieceValue(str(board[i]),i)
-    return totalEval
+pawnEvalWhite = [
+        [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+        [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+        [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+        [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+        [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+        [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+        [0.5,  1.0, 1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+        [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+    ]
 
-def getPieceValue(piece,index):
-    if(piece == 'P') :
-        return pst.get('P')[index]
-    elif piece == 'R':
-        return pst.get('R')[index]
-    elif piece == 'N':
-        return pst.get('N')[index]
-    elif piece == 'Q':
-        return pst.get('Q')[index]
-    elif piece == 'K':
-        return pst.get('K')[index]
-    elif piece == 'B':
-        return pst.get('B')[index]
-    else:
+pawnEvalBlack = list(reversed(pawnEvalWhite))
+
+knightEval = [
+        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+        [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
+        [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
+            [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+        [-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
+        [-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+        [-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
+        [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
+    ]
+
+bishopEvalWhite = [
+    [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+    [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
+    [ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
+    [ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
+    [ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
+    [ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
+    [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
+]
+
+bishopEvalBlack = list(reversed(bishopEvalWhite))
+
+rookEvalWhite = [
+    [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+    [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
+]
+
+rookEvalBlack = list(reversed(rookEvalWhite))
+
+evalQueen = [
+    [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
+    [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+    [ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+    [  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+    [ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
+]
+
+kingEvalWhite = [
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
+    [ -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
+    [  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
+    [  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
+]
+
+kingEvalBlack = (reversed(kingEvalWhite));
+
+# def evaluateBoard(board):
+#     totalEval = 0
+#     for i in range(len(board)):
+#         totalEval = totalEval + getPieceValue(str(board[i]),i)
+#     return totalEval
+#
+# def getPieceValue(piece,index):
+#     if(piece == 'P') :
+#         return pst.get('P')[index]
+#     elif piece == 'R':
+#         return pst.get('R')[index]
+#     elif piece == 'N':
+#         return pst.get('N')[index]
+#     elif piece == 'Q':
+#         return pst.get('Q')[index]
+#     elif piece == 'K':
+#         return pst.get('K')[index]
+#     elif piece == 'B':
+#         return pst.get('B')[index]
+#     else:
+#         return 0
+
+def evaluateBoard(board):
+    board = board.strip()
+    board = board.split('\n')
+    i=0
+    while i<len(board):
+        board[i] = board[i].strip()
+        i+=1
+    total_eval = 0
+    for i in range(8):
+        for j in range(8):
+            total_eval += getPieceValue(board[i][j],i,j)
+    return total_eval
+
+def getPieceValue(p,i,j):
+    if not (p.isalpha()) or not p.isupper():
         return 0
+    if p == 'P':
+        return 10 + pawnEvalWhite[j][i]
+    if p == 'R':
+        return 50 + rookEvalWhite[j][i]
+    if p == 'N':
+        return 30 + knightEval[j][i]
+    if p == 'B':
+        return 30 + bishopEvalWhite[j][i]
+    if p == 'Q':
+        return 90 + evalQueen[j][i]
+    if p == 'K':
+        return 900 + kingEvalWhite[j][i]
 
 def material(board_state, weight):
     black_points = 0

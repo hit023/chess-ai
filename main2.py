@@ -4,11 +4,9 @@ import heuristics
 from collections import namedtuple
 from itertools import count
 
-MATE_LOWER = 60000 - 8*2700
-MATE_UPPER = 60000 + 8*2700
-
-
 #assume AI plays white
+
+
 
 initial = (
     '         \n'  #   0 -  9
@@ -228,7 +226,9 @@ class AI(object):
         best_move = possible_moves_updated[0]
         for move in possible_moves_updated:
             #move = Node(board_state,''.join(convertToAlgebraic(move[0],move[1])))
+            print(move.algebraic_move)
             board_value = self.ab_minimax(move, alpha, beta, 1)
+            print(board_value)
             if alpha < board_value:
                 alpha = board_value
                 best_move = move
@@ -241,6 +241,8 @@ class AI(object):
         #base case to stop recursion, ie: when max_depth is reached.
         if current_depth == self.max_depth:
             board_value = self.get_heuristic(node.board_state)
+            #print(node.algebraic_move)
+            #print(board_value)
             #move = convert_to_sfindices(node.algebraic_move)
             #board_value = self.value(move,fen_to_board(node.board_state))
             if current_depth % 2 == 0:
@@ -290,17 +292,6 @@ class AI(object):
         #total_points += heuristics.material(board_state, 100)
         return total_points
 
-    def value(self, move,board):
-        i, j = move
-        p, q = board[i], board[j]
-        # Actual move
-        score = 0
-        score = pst[p][j] - pst[p][i]
-        # Capture
-        if q.islower():
-            score += pst[q.upper()][119-j]
-        return score
-
 class Position(namedtuple('Position', 'board score wc bc')):
 
         def move(self, move):
@@ -328,7 +319,7 @@ class Position(namedtuple('Position', 'board score wc bc')):
             return score
 
 def main():
-    global player_turn
+    global player_turn = 1
     board = chess.Board()
     with chess.polyglot.open_reader("./performance.bin") as reader:
         while True:
