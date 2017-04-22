@@ -1,12 +1,10 @@
 import chess
 import chess.polyglot
-import heuristics
+import ex2
 from collections import namedtuple
 from itertools import count
 
 #assume AI plays white
-
-
 
 initial = (
     '         \n'  #   0 -  9
@@ -175,9 +173,10 @@ def convertToAlgebraic(i,j):
 
 
 class Node():
-    def __init__(self, board_state=None, algebraic_move=None, value=None):
+    def __init__(self, prev_board_state ,board_state=None, algebraic_move=None, value=None):
         self.board_state = board_state #fen representation
         self.algebraic_move = algebraic_move #e2e4
+        self.prev_board_state = prev_board_state
 
 class AI(object):
     def __init__(self,max_depth=4,node_count=0):
@@ -197,38 +196,55 @@ class AI(object):
             put = lambda board, i, p: board[:i] + p + board[i+1:]
             b = put(b, j, b[i])
             b = put(b, i, '.')
-            k = Node(board_to_fen(b),''.join(convertToAlgebraic(i,j)))
+            k = Node(board_state,board_to_fen(b),''.join(convertToAlgebraic(i,j)))
             possible_moves_updated.append(k)
         return possible_moves_updated
 
     def get_moves(self,fen):
-        global player_turn
-        b = fen_to_board(fen)
-        for i,p in enumerate(b):
-            if not p.isupper(): continue
-            for d in directions[p]:
-                for j in count(i+d, d):
-                    q = b[j]
-                    if q.isspace() or q.isupper(): break
-                    if p == 'P' and d in (N, N+N) and q != '.':
-                        break
-                    if p == 'P' and d == N+N and (i < A1+N or b[i+N] != '.'):
-                        break #double move by the pawn only in the first turn.
-                    yield (i, j)
-                    if p in 'PNK' or q.islower():
-                        break
+          global player_turn
+          board = fen_to_board(fen)
+
+          ep = 0
+          kp = 0
+          for i, p in enumerate(board):
+                if not p.isupper(): continue
+                for d in directions[p]:
+                    for j in count(i+d, d):
+
+                        q = board[j]
+                        #print(q)
+                        # Stay inside the board, and off friendly pieces
+                        if q.isspace() or q.isupper(): break
+                        # Pawn move, double move and capture
+                        if p == 'P' and d in (N, N+N) and q != '.': break
+                        if p == 'P' and d == N+N and (i < A1+N or board[i+N] != '.'): break
+                        if p == 'P' and d in (N+W, N+E) and q == '.' and j not in (ep, kp): break
+                        # Move it
+                        yield (i, j)
+                        # Stop crawlers from sliding, and sliding after captures
+                        if p in 'PNK':
+                            break
+                        if q.islower():
+                            break
 
     def ab_make_move(self, board_state):
         possible_moves = list(self.get_moves(board_state))
         possible_moves_updated = self.apply_move(possible_moves,board_state)
+
+        #print(i.algebraic_move)
         alpha = float("-inf")
         beta = float("inf")
         best_move = possible_moves_updated[0]
         for move in possible_moves_updated:
             #move = Node(board_state,''.join(convertToAlgebraic(move[0],move[1])))
-            print(move.algebraic_move)
+            #print(move.algebraic_move)
             board_value = self.ab_minimax(move, alpha, beta, 1)
-            print(board_value)
+            #print("                                                                     " + str(move.algebraic_move))
+            #print("move" + str(move))
+            #print("board_value" + str(board_value))
+
+
+            #print(board_value)
             if alpha < board_value:
                 alpha = board_value
                 best_move = move
@@ -240,9 +256,11 @@ class AI(object):
         current_depth += 1
         #base case to stop recursion, ie: when max_depth is reached.
         if current_depth == self.max_depth:
-            board_value = self.get_heuristic(node.board_state)
+            #print(fen_to_board(node.board_state))
             #print(node.algebraic_move)
-            #print(board_value)
+            board_value = self.get_heuristic(node.board_state,node.algebraic_move,node.prev_board_state)
+            #print(node.algebraic_move)
+            #print("board value= "+str(board_value))
             #move = convert_to_sfindices(node.algebraic_move)
             #board_value = self.value(move,fen_to_board(node.board_state))
             if current_depth % 2 == 0:
@@ -250,12 +268,14 @@ class AI(object):
                 if (alpha < board_value):
                     alpha = board_value
                 self.node_count += 1
+                #print("alpha" + str(alpha))
                 return alpha
             else:
                 # pick smallest number, where root is black and odd depth
                 if (beta > board_value):
                     beta = board_value
                 self.node_count += 1
+                #print("beta" + str(beta))
                 return beta
 
         possible_moves = list(self.get_moves(node.board_state))
@@ -266,7 +286,7 @@ class AI(object):
         #    possible_moves[i] = node
 
         possible_moves = self.apply_move(possible_moves,node.board_state)
-        #print("exploring: "+node.algebraic_move)
+        #("exploring: "+node.algebraic_move)
         if current_depth % 2 == 0:
             # min player's turn
             for child_node in possible_moves:
@@ -285,12 +305,22 @@ class AI(object):
                         alpha = board_value
             return alpha
 
-    def get_heuristic(self, board_state=None):
+    def get_heuristic(self, board_state, move,prev_board_state):
         total_points = 0
         # total piece count
-        total_points += heuristics.evaluateBoard(fen_to_board(board_state))
-        #total_points += heuristics.material(board_state, 100)
+        #print(fen_to_board(board_state))
+        #print(move+'\n'+str(convert_to_sfindices(move)[0]))
+        total_points += ex2.evaluateBoard(fen_to_board(board_state))
+        #total_points += heuristics.material(board_state, 100)()
+        i = convert_to_sfindices(move)[0]
+        j = convert_to_sfindices(move)[1]
+        #print("move: "+ move)
+        total_points += ex2.value(i,j,fen_to_board(prev_board_state))
+
+        #print("total_points" + str(total_points))
         return total_points
+
+
 
 class Position(namedtuple('Position', 'board score wc bc')):
 
@@ -319,9 +349,10 @@ class Position(namedtuple('Position', 'board score wc bc')):
             return score
 
 def main():
-    global player_turn = 1
+    global player_turn
+    player_turn = 1
     board = chess.Board()
-    with chess.polyglot.open_reader("./performance.bin") as reader:
+    with chess.polyglot.open_reader("../../performance (1).bin") as reader:
         while True:
             try:
                 if player_turn==1:
@@ -345,6 +376,7 @@ def main():
                     black_move = chess.Move(from_square,to_square,promotion=None)
                     board.push(black_move)
                     player_turn = 1
+
                 print(board)
             except IndexError:
                 print("All opening moves exhausted!\n")
@@ -355,21 +387,24 @@ def main():
     board = fen_to_board(boardsf)
     pos = Position(board, 0, (True,True), (True,True))
     ai = AI()
-    player_turn = 0
+    player_turn = 1
+    black_move = ""
+    temp_pos_board = ""
     while True:
-        while True:
-            black_move = raw_input("Enter starting and ending positons(example: e2e4):\n")
-            black_move.strip()
-            try:
-                assert len(black_move)==4,"Invalid format!"
-            except AssertionError:
-                continue
+        if player_turn == 0:
+            while True:
+                black_move = raw_input("Enter starting and ending positons(example: e2e4):\n")
+                black_move.strip()
+                if len(black_move)!=4:
+                    print("Invalid move")
+                else:
+                    break
+            temp_pos_board = pos.board
             pos = pos.move(convert_to_sfindices(black_move))
             print(pos.board)
-
             player_turn = 1
-
-            node = Node(board_to_fen(pos.board),black_move)
+        else:
+            node = Node(board_to_fen(temp_pos_board),board_to_fen(pos.board),black_move)
             move = ai.ab_make_move(node.board_state)
             print("My mov: " + move)
             pos = pos.move(convert_to_sfindices(move))
