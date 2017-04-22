@@ -173,9 +173,10 @@ def convertToAlgebraic(i,j):
 
 
 class Node():
-    def __init__(self, board_state=None, algebraic_move=None, value=None):
+    def __init__(self, prev_board_state ,board_state=None, algebraic_move=None, value=None):
         self.board_state = board_state #fen representation
         self.algebraic_move = algebraic_move #e2e4
+        self.prev_board_state = prev_board_state
 
 class AI(object):
     def __init__(self,max_depth=4,node_count=0):
@@ -195,7 +196,7 @@ class AI(object):
             put = lambda board, i, p: board[:i] + p + board[i+1:]
             b = put(b, j, b[i])
             b = put(b, i, '.')
-            k = Node(board_to_fen(b),''.join(convertToAlgebraic(i,j)))
+            k = Node(board_state,board_to_fen(b),''.join(convertToAlgebraic(i,j)))
             possible_moves_updated.append(k)
         return possible_moves_updated
 
@@ -221,11 +222,16 @@ class AI(object):
                         # Move it
                         yield (i, j)
                         # Stop crawlers from sliding, and sliding after captures
-                        if p in 'PNK' or q.islower(): break
+                        if p in 'PNK':
+                            break
+                        if q.islower():
+                            break
 
     def ab_make_move(self, board_state):
         possible_moves = list(self.get_moves(board_state))
         possible_moves_updated = self.apply_move(possible_moves,board_state)
+
+        #print(i.algebraic_move)
         alpha = float("-inf")
         beta = float("inf")
         best_move = possible_moves_updated[0]
@@ -233,6 +239,11 @@ class AI(object):
             #move = Node(board_state,''.join(convertToAlgebraic(move[0],move[1])))
             #print(move.algebraic_move)
             board_value = self.ab_minimax(move, alpha, beta, 1)
+            #print("                                                                     " + str(move.algebraic_move))
+            #print("move" + str(move))
+            #print("board_value" + str(board_value))
+
+
             #print(board_value)
             if alpha < board_value:
                 alpha = board_value
@@ -245,9 +256,11 @@ class AI(object):
         current_depth += 1
         #base case to stop recursion, ie: when max_depth is reached.
         if current_depth == self.max_depth:
-            board_value = self.get_heuristic(node.board_state,node.algebraic_move)
+            #print(fen_to_board(node.board_state))
             #print(node.algebraic_move)
-            #print(board_value)
+            board_value = self.get_heuristic(node.board_state,node.algebraic_move,node.prev_board_state)
+            #print(node.algebraic_move)
+            #print("board value= "+str(board_value))
             #move = convert_to_sfindices(node.algebraic_move)
             #board_value = self.value(move,fen_to_board(node.board_state))
             if current_depth % 2 == 0:
@@ -255,12 +268,14 @@ class AI(object):
                 if (alpha < board_value):
                     alpha = board_value
                 self.node_count += 1
+                #print("alpha" + str(alpha))
                 return alpha
             else:
                 # pick smallest number, where root is black and odd depth
                 if (beta > board_value):
                     beta = board_value
                 self.node_count += 1
+                #print("beta" + str(beta))
                 return beta
 
         possible_moves = list(self.get_moves(node.board_state))
@@ -290,12 +305,19 @@ class AI(object):
                         alpha = board_value
             return alpha
 
-    def get_heuristic(self, board_state, move):
+    def get_heuristic(self, board_state, move,prev_board_state):
         total_points = 0
         # total piece count
+        #print(fen_to_board(board_state))
+        #print(move+'\n'+str(convert_to_sfindices(move)[0]))
         total_points += ex2.evaluateBoard(fen_to_board(board_state))
         #total_points += heuristics.material(board_state, 100)()
-        total_points+= ex2.value(convert_to_sfindices(move),fen_to_board(board_state))
+        i = convert_to_sfindices(move)[0]
+        j = convert_to_sfindices(move)[1]
+        #print("move: "+ move)
+        total_points += ex2.value(i,j,fen_to_board(prev_board_state))
+
+        #print("total_points" + str(total_points))
         return total_points
 
 
@@ -367,6 +389,7 @@ def main():
     ai = AI()
     player_turn = 1
     black_move = ""
+    temp_pos_board = ""
     while True:
         if player_turn == 0:
             while True:
@@ -376,11 +399,12 @@ def main():
                     print("Invalid move")
                 else:
                     break
+            temp_pos_board = pos.board
             pos = pos.move(convert_to_sfindices(black_move))
             print(pos.board)
             player_turn = 1
         else:
-            node = Node(board_to_fen(pos.board),black_move)
+            node = Node(board_to_fen(temp_pos_board),board_to_fen(pos.board),black_move)
             move = ai.ab_make_move(node.board_state)
             print("My mov: " + move)
             pos = pos.move(convert_to_sfindices(move))
